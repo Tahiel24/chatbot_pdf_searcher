@@ -1,0 +1,8 @@
+# Si es la primera vez que se levanta el proyecto:
+1) Crear el entorno virtual con: python3 -m venv venv
+2) Crear el archivo .gitignore procurando ignorar la carpeta venv creada en el paso anterior
+3) Activar el entorno virtual con: source venv/bin/activate 
+4) Instalar las dependencias con: pip install -r requirements.txt 
+
+#Si no es la primera vez accediendo al proyecto entonces solo seguir los pasos 3 y 4
+
