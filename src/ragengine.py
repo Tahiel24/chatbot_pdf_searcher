@@ -20,7 +20,7 @@ class RAGEngine:
 
         # 2. LLM local (Ollama)
         self.llm = ChatOllama(
-            model="llama3.2:1b",     #Cambiar esta linea segun el modelo llm que se vaya a utilizar
+            model="llama3.2:3b",     #Cambiar esta linea segun el modelo llm que se vaya a utilizar
             temperature=0,
             keep_alive="5m"
         )
