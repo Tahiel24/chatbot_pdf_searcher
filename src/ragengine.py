@@ -7,6 +7,7 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.messages import HumanMessage, AIMessage
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
+from operator import itemgetter
 
 
 class RAGEngine:
@@ -20,7 +21,7 @@ class RAGEngine:
 
         # 2. LLM local (Ollama)
         self.llm = ChatOllama(
-            model="llama3",
+            model="llama3.2:1b",     #Cambiar esta linea segun el modelo llm que se vaya a utilizar
             temperature=0,
             keep_alive="5m"
         )
@@ -93,8 +94,8 @@ class RAGEngine:
             {
                 "standalone_question": contextualize_chain,
                 "context": contextualize_chain | retrieve_docs | self._format_docs,
-                "input": RunnablePassthrough(),
-                "chat_history": RunnablePassthrough()
+                "input": itemgetter("input"),
+                "chat_history": itemgetter("chat_history")
             }
             | qa_prompt
             | self.llm
