@@ -3,12 +3,11 @@ from typing import List, Tuple, Dict, Any
 from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.chat_models import ChatOllama
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.messages import HumanMessage, AIMessage
 from langchain_core.output_parsers import StrOutputParser
-from langchain_core.runnables import RunnablePassthrough
+from langchain_core.prompts.chat import ChatPromptTemplate
 from operator import itemgetter
-
+from langchain_core.runnables import RunnableLambda
 
 class RAGEngine:
     def __init__(self, persist_directory: str = "data/vector_store"):
@@ -38,7 +37,7 @@ class RAGEngine:
         )
 
         # 4. Retriever
-        self.retriever = self.vector_db.as_retriever(search_kwargs={"k": 3})
+        self.retriever = self.vector_db.as_retriever(search_kwargs={"k": 1})     #Modificar este valor en el futuro
 
         # 5. Pipeline RAG
         self.rag_chain = self._build_rag_pipeline()
@@ -56,46 +55,19 @@ class RAGEngine:
     # --------------------------------------------------
 
     def _build_rag_pipeline(self):
-        # ---------- ETAPA 1: Reescritura de la pregunta ----------
-        contextualize_prompt = ChatPromptTemplate.from_messages([
-            ("system",
-             "Dado el historial y la pregunta del usuario, reformulá la pregunta "
-             "para que sea independiente. NO la respondas."),
-            MessagesPlaceholder("chat_history"),
-            ("human", "{input}")
-        ])
+        
 
-        contextualize_chain = (
-            contextualize_prompt
-            | self.llm
-            | StrOutputParser()
-        )
-
-        # ---------- ETAPA 2: Retrieval ----------
-        def retrieve_docs(question: str):
-            return self.retriever.invoke(question)
-
-        # ---------- ETAPA 3 + 4: QA ----------
         qa_prompt = ChatPromptTemplate.from_messages([
             ("system",
-             "Sos un asistente experto en análisis documental.\n"
-             "Usá SOLO el contexto para responder.\n\n"
-             "Reglas:\n"
-             "1. Si no sabés, decilo.\n"
-             "2. Respuesta clara y profesional.\n"
-             "3. Citá fuente y página.\n\n"
-             "Contexto:\n{context}"
+             "Sos un asistente técnico. Responde usando solo este contexto:\n{context}"
              ),
-            MessagesPlaceholder("chat_history"),
             ("human", "{input}")
         ])
 
         rag_chain = (
             {
-                "standalone_question": contextualize_chain,
-                "context": contextualize_chain | retrieve_docs | self._format_docs,
+                "context": itemgetter("input") | self.retriever | RunnableLambda(self._format_docs),
                 "input": itemgetter("input"),
-                "chat_history": itemgetter("chat_history")
             }
             | qa_prompt
             | self.llm
