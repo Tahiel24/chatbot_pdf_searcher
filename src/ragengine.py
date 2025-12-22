@@ -1,124 +1,125 @@
 import os
 from typing import List, Tuple, Dict, Any
-
-# LangChain Imports
 from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.chat_models import ChatOllama
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain.chains import create_history_aware_retriever, create_retrieval_chain
-from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain_core.messages import HumanMessage, AIMessage
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.runnables import RunnablePassthrough
+
 
 class RAGEngine:
     def __init__(self, persist_directory: str = "data/vector_store"):
         self.persist_directory = persist_directory
-        
-        # 1. Configuración de Embeddings (Debe ser IDÉNTICO a la fase de ingesta)
+
+        # 1. Embeddings (idéntico a la ingesta)
         self.embedding_model = HuggingFaceEmbeddings(
             model_name="sentence-transformers/all-MiniLM-L6-v2"
         )
-        
-        # 2. Configuración del LLM Local (Ollama)
-        # temperature=0 para respuestas fácticas y precisas (menos creatividad, más rigor).
+
+        # 2. LLM local (Ollama)
         self.llm = ChatOllama(
-            model="llama3", 
+            model="llama3",
             temperature=0,
-            keep_alive="5m"  # Mantiene el modelo en RAM 5 mins
+            keep_alive="5m"
         )
-        
-        # 3. Cargar Base Vectorial
+
+        # 3. Vector DB
         if not os.path.exists(persist_directory):
-            raise FileNotFoundError(f"No se encontró la DB en {persist_directory}. Ejecuta la ingesta primero.")
-            
+            raise FileNotFoundError(
+                f"No se encontró la DB en {persist_directory}. Ejecutá la ingesta primero."
+            )
+
         self.vector_db = Chroma(
             persist_directory=self.persist_directory,
             embedding_function=self.embedding_model
         )
-        
-        # 4. Configurar el Retriever
-        # k=3: Recuperamos los 3 fragmentos más relevantes para darle contexto al LLM.
-        self.retriever = self.vector_db.as_retriever(search_kwargs={"k": 3})
-        
-        # 5. Inicializar la Cadena de Conversación
-        self.conversation_chain = self._setup_chain()
 
-    def _setup_chain(self):
-        """
-        Configura la cadena RAG con memoria y re-escritura de preguntas.
-        """
-        
-        # --- SUB-CADENA 1: Contextualización ---
-        # Si el usuario dice "¿Cuánto cuesta?", el modelo necesita saber de qué hablamos antes.
-        # Esta cadena reescribe la pregunta usando el historial.
-        context_q_system_prompt = """
-        Dado un historial de chat y la última pregunta del usuario, 
-        formulala como una pregunta independiente que pueda entenderse sin el historial. 
-        NO respondas a la pregunta, solo reformúlala si es necesario o devolvela tal cual.
-        """
-        context_q_prompt = ChatPromptTemplate.from_messages([
-            ("system", context_q_system_prompt),
+        # 4. Retriever
+        self.retriever = self.vector_db.as_retriever(search_kwargs={"k": 3})
+
+        # 5. Pipeline RAG
+        self.rag_chain = self._build_rag_pipeline()
+
+    # --------------------------------------------------
+    # UTILIDADES
+    # --------------------------------------------------
+
+    @staticmethod
+    def _format_docs(docs):
+        return "\n\n".join(doc.page_content for doc in docs)
+
+    # --------------------------------------------------
+    # PIPELINE RAG
+    # --------------------------------------------------
+
+    def _build_rag_pipeline(self):
+        # ---------- ETAPA 1: Reescritura de la pregunta ----------
+        contextualize_prompt = ChatPromptTemplate.from_messages([
+            ("system",
+             "Dado el historial y la pregunta del usuario, reformulá la pregunta "
+             "para que sea independiente. NO la respondas."),
             MessagesPlaceholder("chat_history"),
-            ("human", "{input}"),
+            ("human", "{input}")
         ])
-        
-        history_aware_retriever = create_history_aware_retriever(
-            self.llm, self.retriever, context_q_prompt
+
+        contextualize_chain = (
+            contextualize_prompt
+            | self.llm
+            | StrOutputParser()
         )
 
-        # --- SUB-CADENA 2: Respuesta y Citas ---
-        qa_system_prompt = """
-        Sos un asistente de IA experto en análisis documental. 
-        Usa los siguientes fragmentos de contexto recuperado para responder la pregunta. 
-        
-        IMPORTANTE:
-        1. Si no sabes la respuesta basándote en el contexto, deci que no la sabes.
-        2. Mantene la respuesta concisa y profesional.
-        3. SIEMPRE cita la fuente al final de tu respuesta indicando el nombre del archivo y la página.
-        
-        Contexto:
-        {context}
-        """
+        # ---------- ETAPA 2: Retrieval ----------
+        def retrieve_docs(question: str):
+            return self.retriever.invoke(question)
+
+        # ---------- ETAPA 3 + 4: QA ----------
         qa_prompt = ChatPromptTemplate.from_messages([
-            ("system", qa_system_prompt),
+            ("system",
+             "Sos un asistente experto en análisis documental.\n"
+             "Usá SOLO el contexto para responder.\n\n"
+             "Reglas:\n"
+             "1. Si no sabés, decilo.\n"
+             "2. Respuesta clara y profesional.\n"
+             "3. Citá fuente y página.\n\n"
+             "Contexto:\n{context}"
+             ),
             MessagesPlaceholder("chat_history"),
-            ("human", "{input}"),
+            ("human", "{input}")
         ])
-        
-        question_answer_chain = create_stuff_documents_chain(self.llm, qa_prompt)
-        
-        # Unimos todo: Historial -> Retriever -> Documentos -> LLM -> Respuesta
-        rag_chain = create_retrieval_chain(history_aware_retriever, question_answer_chain)
-        
+
+        rag_chain = (
+            {
+                "standalone_question": contextualize_chain,
+                "context": contextualize_chain | retrieve_docs | self._format_docs,
+                "input": RunnablePassthrough(),
+                "chat_history": RunnablePassthrough()
+            }
+            | qa_prompt
+            | self.llm
+            | StrOutputParser()
+        )
+
         return rag_chain
 
-    def chat(self, query: str, chat_history: List[Tuple[str, str]] = []) -> Dict[str, Any]:
-        """
-        Procesa la pregunta y devuelve respuesta + fuentes.
-        """
-        # Convertimos el historial de tuplas al formato de LangChain
-        langchain_history = []
-        for human, ai in chat_history:
-            langchain_history.append(HumanMessage(content=human))
-            langchain_history.append(AIMessage(content=ai))
+    # --------------------------------------------------
+    # API PÚBLICA
+    # --------------------------------------------------
 
-        # Ejecutamos la cadena
-        response = self.conversation_chain.invoke({
+    def chat(self, query: str, chat_history: List[Tuple[str, str]] = []) -> Dict[str, Any]:
+        # Convertir historial a mensajes LangChain
+        lc_history = []
+        for human, ai in chat_history:
+            lc_history.append(HumanMessage(content=human))
+            lc_history.append(AIMessage(content=ai))
+
+        answer = self.rag_chain.invoke({
             "input": query,
-            "chat_history": langchain_history
+            "chat_history": lc_history
         })
-        
-        # Procesamos las fuentes para mostrarlas limpio en el UI
-        sources = []
-        if "context" in response:
-            for doc in response["context"]:
-                sources.append({
-                    "source": doc.metadata.get("source", "Desconocido"),
-                    "page": doc.metadata.get("page", "N/A"),
-                    "content_snippet": doc.page_content[:100] + "..." # Snippet para debug
-                })
 
         return {
-            "answer": response["answer"],
-            "sources": sources
+            "answer": answer,
+            "sources": []  # opcional: se puede extender para devolver docs
         }

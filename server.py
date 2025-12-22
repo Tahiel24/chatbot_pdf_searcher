@@ -3,7 +3,7 @@ from flask_cors import CORS
 import os
 import tempfile
 from src.ingestion import DocumentProcessor
-from src.rag_engine import RAGEngine
+from src.ragengine import RAGEngine
 
 app = Flask(__name__)
 CORS(app)  # Permite peticiones desde otros orígenes si se quisiera desacoplar por completo el frontend del backend
