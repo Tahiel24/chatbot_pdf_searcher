@@ -8,6 +8,10 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts.chat import ChatPromptTemplate
 from operator import itemgetter
 from langchain_core.runnables import RunnableLambda
+from dotenv import load_dotenv
+from langchain_groq import ChatGroq
+
+load_dotenv() # Cargar variables de entorno desde .env
 
 class RAGEngine:
     def __init__(self, persist_directory: str = "data/vector_store"):
@@ -19,10 +23,10 @@ class RAGEngine:
         )
 
         # 2. LLM local (Ollama)
-        self.llm = ChatOllama(
-            model="llama3.2:3b",     #Cambiar esta linea segun el modelo llm que se vaya a utilizar
+        self.llm = ChatGroq(
+            model="llama-3.3-70b-versatile",     #Cambiar esta linea segun el modelo llm que se vaya a utilizar
             temperature=0,
-            keep_alive="5m"
+            api_key=os.getenv("GROQ_API_KEY")
         )
 
         # 3. Vector DB
