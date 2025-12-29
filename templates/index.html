@@ -19,7 +19,7 @@
 <body>
 
     <nav class="navbar navbar-dark bg-dark px-4">
-        <span class="navbar-brand mb-0 h1">🧠 Private Doc Intel</span>
+        <span class="navbar-brand mb-0 h1"> Private Doc Intel</span>
         <div class="d-flex gap-2">
             <input type="file" id="pdfUpload" class="form-control form-control-sm" multiple accept=".pdf">
             <button onclick="uploadFiles()" class="btn btn-outline-light btn-sm">Subir & Procesar</button>
@@ -28,7 +28,7 @@
 
     <div id="chat-box" class="chat-container">
         <div class="message bot-msg">
-            ¡Hola! Sube tus documentos PDF arriba y luego pregúntame lo que quieras sobre ellos.
+            ¡Hola! Subí tus documentos PDF arriba y luego preguntame lo que quieras sobre ellos.
         </div>
     </div>
     
@@ -55,7 +55,7 @@
             }
 
             const btn = document.querySelector('button[onclick="uploadFiles()"]');
-            btn.innerHTML = "⏳ Procesando...";
+            btn.innerHTML = " Procesando...";
             btn.disabled = true;
 
             try {

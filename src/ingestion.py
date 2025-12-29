@@ -29,16 +29,16 @@ class DocumentProcessor:
         if not os.path.exists(source_path):
             raise FileNotFoundError(f"El archivo {source_path} no existe.")
 
-        print(f"🔄 Procesando archivo: {source_path}...")
+        print(f"Procesando archivo: {source_path}...")
 
         # 1. Carga del documento (Mantiene metadatos: source y page)
         loader = PyPDFLoader(source_path)
         documents = loader.load()
-        print(f"   📄 Páginas cargadas: {len(documents)}")
+        print(f"Páginas cargadas: {len(documents)}")
 
         # 2. División en chunks (Splitting)
         chunks = self.text_splitter.split_documents(documents)
-        print(f"   ✂️ Chunks generados: {len(chunks)}")
+        print(f"Chunks generados: {len(chunks)}")
 
         # 3. Guardado en Vector Store (ChromaDB)
         # Esto crea los embeddings y los guarda localmente.

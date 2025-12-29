@@ -63,7 +63,8 @@ class RAGEngine:
 
         qa_prompt = ChatPromptTemplate.from_messages([
             ("system",
-             "Sos un asistente técnico. Responde usando solo este contexto:\n{context}"
+             "Sos un asistente experto en analisis de documentos. Responde usando solo este contexto:\n{context}. Si no sabes"
+             " la respuesta, decilo claramente sin inventar nada."
              ),
             ("human", "{input}")
         ])
