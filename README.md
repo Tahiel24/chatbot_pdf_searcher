@@ -15,7 +15,7 @@ Un asistente conversacional impulsado por IA diseñado para interactuar con docu
 * **LLM Provider:** Groq API (Llama 3)
 * **Frontend:** HTML5, Vanilla JS, Bootstrap 5
 
-## Autor : Varela Tahiel
+
 
 ## Estructura del Proyecto
 
@@ -32,4 +32,13 @@ pdf_Searcher/
 ├── .env.example            # Plantilla de variables de entorno
 ├── requirements.txt        # Dependencias del proyecto
 └── server.py               # Punto de entrada de la API web
+```
+## Instalación y Uso Local
+1) Clonar el repositorio
+2) Crear y activar un entorno virtual: python -m venv venv (Linux), .\venv\Scripts\activate (Windows)
+3) Instalar dependencias: pip install -r requirements.txt
+4) Configurar variables de entorno: crear un archivo .env en la raíz del proyecto (ejemplo en el archivo .env.example) y agregar tu clave de Groq
+5) Iniciar el servidor: python server.py
+
+## Autor : Varela Tahiel
 
