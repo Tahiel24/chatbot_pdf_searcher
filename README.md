@@ -1,4 +1,4 @@
-# 📄 Private Doc Intel - RAG System (pdf_Searcher)
+# Private Doc Intel - RAG System (pdf_Searcher)
 
 Un asistente conversacional impulsado por IA diseñado para interactuar con documentos PDF privados. Esta aplicación implementa una arquitectura **RAG (Retrieval-Augmented Generation)** completa, permitiendo la ingesta de documentos, su vectorización local y la posterior consulta en lenguaje natural basándose estrictamente en el contexto proporcionado.
 
@@ -8,7 +8,7 @@ Un asistente conversacional impulsado por IA diseñado para interactuar con docu
 * **Generación de Embeddings Eficiente:** Uso del modelo `all-MiniLM-L6-v2` (Sentence-Transformers) optimizado para un rendimiento ágil.
 * **Utilizacion de Groq:** Integración con la API de **Groq** para la generación de respuestas.
 
-## 🛠️ Stack Tecnológico
+## Stack Tecnológico
 * **Backend:** Python, Flask, FastAPI
 * **IA & Orquestación:** LangChain, Hugging Face Embeddings
 * **Base de Datos Vectorial:** ChromaDB
