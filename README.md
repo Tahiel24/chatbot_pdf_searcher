@@ -24,7 +24,7 @@ pdf_Searcher/
 ├── data/
 │   └── vector_store/       # Almacenamiento persistente de ChromaDB (SQLite)
 ├── src/                    
-│   ├── ingestion.py        # Pipeline ETL: Carga, chunking y embedding de PDFs
+│   ├── ingestion.py        # Pipeline ETL: Extraccion, Transformacion, Carga
 │   └── ragengine.py        # Motor RAG: Retriever, prompts y conexión con Groq LLM
 ├── static/                 # Assets estáticos (CSS/JS)
 ├── templates/              
