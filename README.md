@@ -40,9 +40,8 @@ pdf_Searcher/
 3) ### Instalar dependencias:
    pip install -r requirements.txt
 4) ### Configurar variables de entorno:
-   crear un archivo .env en la raíz del proyecto (ejemplo en el archivo .env.example) y agregar tu clave de Groq
+   Crear un archivo .env en la raíz del proyecto (ejemplo en el archivo .env.example) y agregar tu clave de Groq
 5) ### Iniciar el servidor:
    python server.py
 
-## Autor : Varela Tahiel
 
